@@ -1,0 +1,219 @@
+/* ============================================
+   Sync Jump Online - 样式表
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #0a0a2e;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+/* ============ 主菜单 ============ */
+#menu {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    z-index: 100;
+    gap: 20px;
+}
+
+.menu-title {
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 900;
+    background: linear-gradient(90deg, #4A90D9, #E74C3C);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    margin-bottom: 8px;
+}
+
+.menu-subtitle {
+    font-size: clamp(0.9rem, 2.5vw, 1.3rem);
+    color: #8888bb;
+    margin-bottom: 30px;
+}
+
+.menu-btn {
+    width: 260px;
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 1px;
+}
+
+.menu-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.menu-btn:active {
+    transform: translateY(0);
+}
+
+.btn-local {
+    background: linear-gradient(135deg, #4A90D9, #357ABD);
+    color: white;
+}
+
+.btn-online {
+    background: linear-gradient(135deg, #E74C3C, #C0392B);
+    color: white;
+}
+
+.btn-join {
+    background: linear-gradient(135deg, #2ECC71, #27AE60);
+    color: white;
+}
+
+/* 房间号输入 */
+.room-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.room-input {
+    width: 140px;
+    padding: 14px 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    border: 2px solid #555;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    outline: none;
+    letter-spacing: 3px;
+}
+
+.room-input:focus {
+    border-color: #2ECC71;
+}
+
+.room-input::placeholder {
+    color: #666;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
+/* ============ 游戏UI覆盖层 ============ */
+#game-ui {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 10;
+    display: none;
+}
+
+.score-display {
+    text-align: center;
+    padding: 12px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* 等待/状态提示 */
+#status-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.7);
+    z-index: 50;
+    color: white;
+    font-size: 1.5rem;
+    gap: 15px;
+}
+
+#status-overlay .room-code {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: #FFD700;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255,255,255,0.2);
+    border-top-color: #FFD700;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 分割线提示（本地模式） */
+.split-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 5;
+    display: none;
+}
+
+.split-hint::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 100vh;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255,255,255,0.15),
+        rgba(255,255,255,0.15),
+        transparent
+    );
+}
+
+/* ============ 动画 ============ */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-btn, .menu-title, .menu-subtitle {
+    animation: fadeIn 0.6s ease backwards;
+}
+
+.menu-subtitle { animation-delay: 0.1s; }
+.menu-btn:nth-child(3) { animation-delay: 0.2s; }
+.menu-btn:nth-child(4) { animation-delay: 0.3s; }
+.room-input-group { animation: fadeIn 0.6s ease 0.4s backwards; }

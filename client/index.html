@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sync Jump Online - 哥俩·同步跃迁</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- 游戏画布 -->
+<canvas id="gameCanvas"></canvas>
+
+<!-- 主菜单 -->
+<div id="menu">
+    <div class="menu-title">哥俩·同步跃迁</div>
+    <div class="menu-subtitle">Sync Jump Online — 双人协作跳跃挑战</div>
+    <button class="menu-btn btn-local" onclick="startLocal()">🎮 本地双人</button>
+    <button class="menu-btn btn-online" onclick="startOnline()">🌐 在线对战</button>
+    <div class="room-input-group">
+        <input class="room-input" id="roomInput" type="text" maxlength="6" placeholder="房间号">
+        <button class="menu-btn btn-join" style="width:auto;padding:14px 24px" onclick="joinRoom()">加入</button>
+    </div>
+</div>
+
+<!-- 游戏UI覆盖层 -->
+<div id="game-ui">
+    <div class="score-display" id="scoreDisplay"></div>
+</div>
+
+<!-- 状态覆盖层 -->
+<div id="status-overlay">
+    <div class="spinner"></div>
+    <div id="status-text">连接中...</div>
+    <div class="room-code" id="room-code-display" style="display:none"></div>
+    <button class="menu-btn btn-local" style="width:auto;padding:12px 24px;margin-top:10px" onclick="backToMenu()">返回菜单</button>
+</div>
+
+<!-- 分割线提示 -->
+<div class="split-hint"></div>
+
+<script src="/static/js/game.js"></script>
+</body>
+</html>
