@@ -7,21 +7,46 @@ from fastapi.responses import FileResponse
 
 from game.room import RoomManager
 
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        await self.broadcast_online_count()
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast_online_count(self):
+        count = len(self.active_connections)
+        for connection in self.active_connections:
+            try:
+                await connection.send_json({"type": "online_count", "count": count})
+            except Exception:
+                pass
+
+
 app = FastAPI(title="Sync Jump Online")
 room_manager = RoomManager()
+connection_manager = ConnectionManager()
 
 client_path = Path(__file__).parent.parent / "client"
 app.mount("/static", StaticFiles(directory=str(client_path)), name="static")
-
 
 @app.get("/")
 async def index():
     return FileResponse(str(client_path / "index.html"))
 
+@app.get("/api/stats")
+async def get_stats():
+    return {"online_players": len(connection_manager.active_connections)}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
+    await connection_manager.connect(websocket)
     player_id = uuid.uuid4().hex[:8]
     room = None
 
@@ -58,6 +83,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     await room.restart()
 
     except WebSocketDisconnect:
+        connection_manager.disconnect(websocket)
+        await connection_manager.broadcast_online_count()
         if room:
             await room_manager.leave_room(player_id, room.room_id)
 

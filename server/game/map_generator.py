@@ -54,9 +54,9 @@ class MapGenerator:
             }
 
             if ptype == "moving":
-                plat["move_range"] = round(random.uniform(30, 70), 1)
-                plat["move_speed"] = round(random.uniform(1.0, 2.5), 2)
-                plat["base_y"] = plat["y"]
+                plat["move_range"] = round(random.uniform(50, 100), 1)
+                plat["move_speed"] = round(random.uniform(0.5, 1.0), 2)
+                plat["base_x"] = plat["x"]
 
             self.platforms.append(plat)
             self.frontier_x = plat["x"] + plat["width"]

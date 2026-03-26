@@ -165,9 +165,22 @@ class Room:
                 if plat["collapse_timer"] <= 0:
                     collapsing.append(plat)
             if plat.get("type") == "moving":
-                plat["y"] = plat["base_y"] + math.sin(
-                    self.tick_count * 0.05 * plat.get("move_speed", 1)
+                if "base_x" not in plat:
+                    plat["base_x"] = plat["x"]
+                
+                prev_x = plat["x"]
+                plat["x"] = plat["base_x"] + math.sin(
+                    self.tick_count * 0.04 * plat.get("move_speed", 1)
                 ) * plat.get("move_range", 40)
+                
+                # 附加水平平台位移给站在上面的玩家
+                dx = plat["x"] - prev_x
+                for p in self.players.values():
+                    # 简单判断是否站在该平台上
+                    if p.is_grounded and \
+                       plat["x"] <= p.x <= plat["x"] + plat["width"] and \
+                       abs((p.y + PLAYER_H) - plat["y"]) <= 5:
+                        p.x += dx
 
         for c in collapsing:
             self.platforms.remove(c)
@@ -207,10 +220,10 @@ class Room:
                 self._end_game()
                 return
 
-        # 摄像机
+        # 摄像机（在服务端仅用于控制地图生成的可见范围与淘汰）
         if players:
             avg_x = sum(p.x for p in players) / len(players)
-            self.camera_x = avg_x - 300
+            self.camera_x = avg_x - 1200
 
         # 分数
         self.score = int(max(p.x for p in players) / 10)
@@ -350,8 +363,8 @@ class Room:
                 "collapsing": p.get("collapsing", False),
             }
             for p in self.platforms
-            if p["x"] + p["width"] > self.camera_x - 100
-            and p["x"] < self.camera_x + 1200
+            if p["x"] + p["width"] > self.camera_x - 500
+            and p["x"] < self.camera_x + 3000
         ]
 
     async def broadcast_msg(self, data):
@@ -386,7 +399,7 @@ class RoomManager:
 
     def _find_waiting(self):
         for room in self.rooms.values():
-            if room.state == "waiting" and not room.is_full():
+            if room.state == "waiting" and not room.is_full() and not room.room_id.startswith("private_"):
                 return room
         return None
 

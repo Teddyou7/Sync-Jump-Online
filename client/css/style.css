@@ -216,4 +216,5 @@ canvas {
 .menu-subtitle { animation-delay: 0.1s; }
 .menu-btn:nth-child(3) { animation-delay: 0.2s; }
 .menu-btn:nth-child(4) { animation-delay: 0.3s; }
-.room-input-group { animation: fadeIn 0.6s ease 0.4s backwards; }
+.menu-btn:nth-child(5) { animation-delay: 0.4s; }
+.room-input-group { animation: fadeIn 0.6s ease 0.5s backwards; }

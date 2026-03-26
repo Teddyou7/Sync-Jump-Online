@@ -71,8 +71,20 @@ window.addEventListener("load", () => {
     window.addEventListener("resize", resizeCanvas);
     initBackground();
     bindInput();
+    fetchOnlineCount();
+    setInterval(fetchOnlineCount, 5000);
     requestAnimationFrame(gameLoop);
 });
+
+async function fetchOnlineCount() {
+    if (socket && socket.readyState === WebSocket.OPEN) return; // let WS handle it if connected
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        const counter = document.getElementById("onlineCountText");
+        if (counter) counter.innerText = data.online_players;
+    } catch (e) { }
+}
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -104,14 +116,20 @@ function startOnline(roomCode) {
     gameMode = "online";
     document.getElementById("menu").style.display = "none";
     showStatus("正在连接服务器...");
+    // 带有 _private_ 前缀标识给服务器创建私人房
     connectWS(roomCode || "auto");
+}
+
+function createPrivateRoom() {
+    const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+    startOnline("private_" + code);
 }
 
 function joinRoom() {
     const input = document.getElementById("roomInput");
     const code = input.value.trim().toUpperCase();
     if (code.length < 4) { input.style.borderColor = "#E74C3C"; return; }
-    startOnline(code);
+    startOnline("private_" + code);
 }
 
 function backToMenu() {
@@ -167,9 +185,9 @@ class LocalMapGenerator {
             else if (r < 0.16 * diff) ptype = "moving";
             const plat = { x: this.frontierX + gap, y: ny, width: w, height: 20, type: ptype };
             if (ptype === "moving") {
-                plat.moveRange = 30 + Math.random() * 50;
-                plat.moveSpeed = 0.8 + Math.random() * 1.5;
-                plat.baseY = ny;
+                plat.moveRange = 50 + Math.random() * 50;
+                plat.moveSpeed = 0.5 + Math.random() * 0.5;
+                plat.baseX = plat.x;
             }
             this.platforms.push(plat);
             this.frontierX = plat.x + plat.width;
@@ -397,8 +415,17 @@ function updateLocal(dt) {
             plat.collapseTimer = (plat.collapseTimer || 300) - 1;
             if (plat.collapseTimer <= 0) toRemove.push(plat);
         }
-        if (plat.type === "moving" && plat.baseY !== undefined)
-            plat.y = plat.baseY + Math.sin(tickCount * 0.04 * (plat.moveSpeed || 1)) * (plat.moveRange || 40);
+        if (plat.type === "moving" && plat.baseX !== undefined) {
+            const prevX = plat.x;
+            plat.x = plat.baseX + Math.sin(tickCount * 0.04 * (plat.moveSpeed || 1)) * (plat.moveRange || 40);
+            const dx = plat.x - prevX;
+            for (let i = 0; i < 2; i++) {
+                const p = players[i];
+                if (p.grounded && plat.x <= p.x && p.x <= plat.x + plat.width && Math.abs((p.y + PLAYER_H) - plat.y) <= 5) {
+                    p.x += dx;
+                }
+            }
+        }
     }
     for (const r of toRemove) { const idx = platforms.indexOf(r); if (idx >= 0) platforms.splice(idx, 1); }
 
@@ -425,12 +452,6 @@ function updateLocal(dt) {
         const allDead = players.every(p => p.y > deathLine);
         if (allDead) { gameState = "gameover"; shakeTimer = 0.5; return; }
     }
-
-    // 摄像机
-    const avgX = (players[0].x + players[1].x) / 2;
-    const avgY = (players[0].y + players[1].y) / 2;
-    cameraX += (avgX - canvas.width / 3 - cameraX) * 0.08;
-    cameraY += (Math.min(0, avgY - canvas.height * 0.55) - cameraY) * 0.06;
 
     score = Math.floor(Math.max(players[0].x, players[1].x) / 10);
     const furthest = Math.max(players[0].x, players[1].x) + canvas.width + 300;
@@ -467,7 +488,14 @@ function connectWS(roomCode) {
 function handleServerMsg(data) {
     switch (data.type) {
         case "joined": myRole = data.role; roomId = data.room_id; break;
-        case "waiting": showStatus("等待对手加入...", roomId); gameState = "waiting"; break;
+        case "waiting":
+            let displayCode = roomId;
+            if (roomId.startsWith("private_")) {
+                displayCode = roomId.replace("private_", "");
+            }
+            showStatus(roomId.startsWith("private_") ? "等待好友加入..." : "等待对手加入...", displayCode);
+            gameState = "waiting";
+            break;
         case "countdown":
             hideStatus(); document.getElementById("game-ui").style.display = "block";
             gameState = "countdown"; countdownValue = data.count; break;
@@ -482,7 +510,7 @@ function handleServerMsg(data) {
         case "state":
             prevPlayers = players.map(p => ({ ...p }));
             players = data.players; platforms = data.platforms;
-            cameraX = data.camera_x; cameraY = data.camera_y || 0; score = data.score;
+            score = data.score;
             if (players.length === 2) {
                 if (ropePoints.length === 0) initRopePoints(players[0], players[1]);
                 updateVerletRope(1 / 30, players[0], players[1]);
@@ -492,9 +520,13 @@ function handleServerMsg(data) {
             break;
         case "gameover":
             players = data.players; platforms = data.platforms;
-            cameraX = data.camera_x; score = data.score;
+            score = data.score;
             gameState = "gameover"; shakeTimer = 0.5; break;
         case "player_left": showStatus("对手已离开"); setTimeout(backToMenu, 2000); break;
+        case "online_count":
+            const counter = document.getElementById("onlineCountText");
+            if (counter) counter.innerText = data.count;
+            break;
     }
 }
 
@@ -586,10 +618,28 @@ let lastTime = 0;
 function gameLoop(timestamp) {
     const dt = Math.min((timestamp - (lastTime || timestamp)) / 1000, 0.05);
     lastTime = timestamp;
+    
+    if ((gameState === "playing" || gameState === "gameover") && players.length === 2) {
+        updateCamera();
+    }
+    
     if (gameMode === "local" && gameState === "playing") updateLocal(dt);
     if (shakeTimer > 0) shakeTimer -= dt;
     render(dt);
     requestAnimationFrame(gameLoop);
+}
+
+function updateCamera() {
+    const avgX = (players[0].x + players[1].x) / 2;
+    const avgY = (players[0].y + players[1].y) / 2;
+    
+    // 竖屏响应式适配：如果是竖屏，留给“前方（右侧）”的视野要更多
+    const isPortrait = canvas.width < canvas.height;
+    const targetOffsetX = isPortrait ? canvas.width * 0.25 : canvas.width / 3;
+    const targetOffsetY = isPortrait ? canvas.height * 0.65 : canvas.height * 0.55;
+    
+    cameraX += (avgX - targetOffsetX - cameraX) * 0.08;
+    cameraY += (Math.min(0, avgY - targetOffsetY) - cameraY) * 0.06;
 }
 
 // ===================== 渲染 =====================
@@ -718,9 +768,13 @@ function drawPlatform(plat) {
     }
 
     if (type === "moving") {
-        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
         const ax = x + width / 2, ay = y + height / 2;
-        ctx.beginPath(); ctx.moveTo(ax - 5, ay - 4); ctx.lineTo(ax + 3, ay); ctx.lineTo(ax - 5, ay + 4);
+        ctx.beginPath();
+        // left arrow
+        ctx.moveTo(ax - 8, ay); ctx.lineTo(ax - 2, ay - 4); ctx.lineTo(ax - 2, ay + 4);
+        // right arrow
+        ctx.moveTo(ax + 8, ay); ctx.lineTo(ax + 2, ay - 4); ctx.lineTo(ax + 2, ay + 4);
         ctx.closePath(); ctx.fill();
     }
 

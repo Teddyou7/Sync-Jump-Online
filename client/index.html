@@ -8,6 +8,11 @@
 </head>
 <body>
 
+<!-- 全局在线人数显示 -->
+<div id="globalOnlineCount" style="position: fixed; top: 15px; left: 15px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; font-family: monospace; z-index: 1000; pointer-events: none; backdrop-filter: blur(2px);">
+    🟢 在线玩家: <span id="onlineCountText">0</span>
+</div>
+
 <!-- 游戏画布 -->
 <canvas id="gameCanvas"></canvas>
 
@@ -16,9 +21,10 @@
     <div class="menu-title">哥俩·同步跃迁</div>
     <div class="menu-subtitle">Sync Jump Online — 双人协作跳跃挑战</div>
     <button class="menu-btn btn-local" onclick="startLocal()">🎮 本地双人</button>
-    <button class="menu-btn btn-online" onclick="startOnline()">🌐 在线对战</button>
-    <div class="room-input-group">
-        <input class="room-input" id="roomInput" type="text" maxlength="6" placeholder="房间号">
+    <button class="menu-btn btn-online" onclick="startOnline()">🌐 公开匹配</button>
+    <button class="menu-btn btn-online" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);" onclick="createPrivateRoom()">🔒 创建私人房</button>
+    <div class="room-input-group" style="margin-top: 15px;">
+        <input class="room-input" id="roomInput" type="text" maxlength="6" placeholder="输入私人密码">
         <button class="menu-btn btn-join" style="width:auto;padding:14px 24px" onclick="joinRoom()">加入</button>
     </div>
 </div>
